@@ -17,12 +17,6 @@ Repository for provision Kubernetes(EKS) with following components.
 Where can I get the latest release?
 -----------------------------------
 You can download source from [SCM](https://github.com/bkosaraju/spark-on-kube-cluster).
-```
-for Gradle: 
-
-```groovy
-    api group: "io.github.bkosaraju", name: "utils_$scalaVariant", version: "$UtilsVersion"
-```
 
 ## Install Instructions 
 
