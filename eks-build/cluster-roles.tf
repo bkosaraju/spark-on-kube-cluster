@@ -260,10 +260,22 @@ POLICY
                   "ssm:GetParameters",
                   "ssm:GetParameter"
               ],
-              "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/*"
+              "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/*/*"
           },
           {
               "Sid": "VisualEditor1",
+              "Effect": "Allow",
+              "Action": [
+                  "ssm:GetParameterHistory",
+                  "ssm:GetParametersByPath",
+                  "ssm:GetParameters",
+                  "ssm:GetParameter"
+              ],
+              "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/dev/*"
+          },
+
+          {
+              "Sid": "VisualEditor2",
               "Effect": "Allow",
               "Action": [
                   "kms:Decrypt",

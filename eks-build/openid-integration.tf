@@ -31,9 +31,9 @@ data "aws_iam_policy_document" "openid-assume-role-policy" {
 
 resource "aws_iam_role" "arp" {
   assume_role_policy = data.aws_iam_policy_document.openid-assume-role-policy.json
-  name               = "${var.cluster-name}-openid-assumerole-policy"
+  name               = "${var.cluster-name}-${var.application-namespace}-openid-assumerole-policy"
   tags = map(
-  "Name", "${var.cluster-name}--openid-assumerole-policy",
+  "Name", "${var.application-serviceaccount}-${var.application-namespace}-${var.cluster-name}-openid-assumerole",
   "kubernetes.io/cluster/${var.cluster-name}", "shared",
   )
 }
@@ -45,15 +45,30 @@ resource "kubernetes_namespace" "appnamespace" {
   }
 }
 
-//todo: Enable Bucket acceess to iam openid-assumerole-policy
-//data aws_iam_policy "s3access" {
-//  arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-//}
-//
-//resource "aws_iam_role_policy_attachment" "iamtoserviceaccount" {
-//  role       = aws_iam_role.arp.name
-//  policy_arn = data.aws_iam_policy.s3access.arn
-//}
+resource "aws_iam_role" "argo-artifact-arp" {
+  assume_role_policy = data.aws_iam_policy_document.openid-assume-role-policy.json
+  name               = "argo-${var.cluster-name}-openid-assumerole-policy"
+  tags = map(
+  "Name", "${var.argo-ns}-${var.cluster-name}-openid-assumerole",
+  "kubernetes.io/cluster/${var.cluster-name}", "shared",
+  )
+}
+
+
+resource "aws_iam_role_policy_attachment" "eks-argo-s3-iam-policy-attach" {
+  role       = aws_iam_role.argo-artifact-arp.name
+  policy_arn = aws_iam_policy.argo-s3-config.arn
+}
+resource "aws_iam_role_policy_attachment" "eks-argo-kms-iam-policy-attach" {
+  role       = aws_iam_role.argo-artifact-arp.name
+  policy_arn = aws_iam_policy.argo-kms-keyaccess.arn
+}
+
+
+
+
+//TODO: Remove and give  access based of needs 
+
 
 data aws_iam_policy "s3access" {
   arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
@@ -64,6 +79,36 @@ resource "aws_iam_role_policy_attachment" "iamtoserviceaccount" {
   policy_arn = data.aws_iam_policy.s3access.arn
 }
 
+
+resource "aws_iam_role_policy_attachment" "kmsaccess" {
+  role       = aws_iam_role.arp.name
+  policy_arn = aws_iam_policy.application-kms-keyaccess.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ekscluster" {
+  role       = aws_iam_role.arp.name
+  policy_arn = aws_iam_policy.eks-cluster-policy.arn
+}
+
+
+resource "aws_iam_role_policy_attachment" "appconfig" {
+  role       = aws_iam_role.arp.name
+  policy_arn = aws_iam_policy.application-config.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ssmreadonly" {
+  role       = aws_iam_role.arp.name
+  policy_arn = aws_iam_policy.ssm-read-access.arn
+}
+
+resource "aws_iam_role_policy_attachment" "application-admin" {
+  role       = aws_iam_role.arp.name
+  policy_arn = aws_iam_policy.ns-admin.arn
+}
+
+//End of IAM User Access Management
+
+//kube User management 
 
 resource "kubernetes_service_account" "spark" {
   metadata {
@@ -90,6 +135,7 @@ resource "kubernetes_cluster_role" "spark-role" {
 }
 
 
+//Give Appropriate local access to user.
 
 resource "kubernetes_cluster_role_binding" "spark-role-binding" {
   metadata {
@@ -107,7 +153,7 @@ resource "kubernetes_cluster_role_binding" "spark-role-binding" {
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "spark"
+    name      = var.application-serviceaccount
     namespace = var.application-namespace
   }
 }

@@ -1,5 +1,7 @@
 resource "aws_subnet" "cluster-nat-sn" {
-  cidr_block = var.vpc_az_cidrs_public
+ count = var.vpc_az_count
+ availability_zone = data.aws_availability_zones.available.names[count.index]
+  cidr_block = var.vpc_az_cidrs_public[count.index]
   vpc_id            = aws_vpc.cluster-vpc.id
 
   tags = map(
@@ -23,11 +25,13 @@ resource "aws_route_table" "cluster-public-rt" {
 }
 
 resource "aws_route_table_association" "cluster-rt-association-public" {
-  subnet_id      = aws_subnet.cluster-nat-sn.id
+  count = var.vpc_az_count
+  subnet_id      = aws_subnet.cluster-nat-sn[count.index].id
   route_table_id = aws_route_table.cluster-public-rt.id
 }
 
 resource "aws_eip" "cluster-nat-gw-eip" {
+  count = var.vpc_az_count
   vpc = true
   tags = map(
   "Name", "${var.cluster-name}-nat-eip",
@@ -37,8 +41,9 @@ resource "aws_eip" "cluster-nat-gw-eip" {
 
 
 resource "aws_nat_gateway" "cluster-nat-gw" {
-  allocation_id = aws_eip.cluster-nat-gw-eip.id
-  subnet_id     = aws_subnet.cluster-nat-sn.id
+  count = var.vpc_az_count
+  allocation_id = aws_eip.cluster-nat-gw-eip[count.index].id
+  subnet_id     = aws_subnet.cluster-nat-sn[count.index].id
 
   tags = map(
   "Name", "${var.cluster-name}-nat-gw",

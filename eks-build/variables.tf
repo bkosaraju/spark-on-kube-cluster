@@ -8,7 +8,12 @@ variable "vpc_az_cidrs_private" {
   type    = list(string)
 }
 variable "vpc_az_cidrs_public" {
-  default = "10.0.3.0/24"
+  default = ["10.0.3.0/24","10.0.4.0/24"]
+  type    = list(string)
+}
+
+variable "vpc_az_cidrs_elb" {
+  default = "10.0.4.0/24"
   type    = string
 }
 
@@ -22,18 +27,16 @@ variable "bastion-instance-type" {
   type    = string
 }
 
-variable "bastion_public_key" {
-  default = "xxxxxxxx"
-  type    = string
-}
-
-
 #Cluster specific configuration
 variable "cluster-name" {
-  default = "eks-de-dev"
+  default = "eks-dm-dev"
   type    = string
 }
 
+variable "cluster-api-public-access-cidrs" {
+  default = ["203.6.223.18/32","13.239.82.145/32","13.55.91.180/32"]
+  type = set(string)
+}
 #Worker specific configuration
 variable "worker-instance-type" {
   default = "r5.2xlarge"
@@ -59,25 +62,24 @@ variable "worker-instances-cooldown-duration" {
 
 #Application Specific configuration
 variable "application-namespace" {
- default = "dataengineering"
+ default = "appdomainname"
  type   = string
 }
 
 variable "application-serviceaccount" {
-  default = "spark"
+  default = "app-robot-user"
   type   = string
 }
 
 variable "application-s3-bucket" {
-  default = "app-config"
+  default = "config"
   type = string
 }
 
 variable "application-s3-bucket-kms-key" {
-  default = "app-s3-kms"
+  default = "s3-kms"
   type = string
 }
-
 
 #Prometheous configuration
 
@@ -99,13 +101,13 @@ variable "grafana-admin-temp-password" {
 
 
 variable "argo-s3-bucket" {
-  default = "app-argo-artifacts"
+  default = "argo-artifacts"
   type = string
 }
 
 
-variable "argo-version" {
- default = "v2.9.3"
+variable "argo-wf-controller-version" {
+ default = "v2.12.5"
  type   = string
 }
 
@@ -116,7 +118,12 @@ variable "argo-ns" {
 
 
 variable "argo-s3-bucket-kms-key" {
-  default = "app-s3-kms"
+  default = "s3-kms"
+  type = string
+}
+
+variable "eks-hosted-dnszone" {
+  default = "appliactiondomainname.com"
   type = string
 }
 

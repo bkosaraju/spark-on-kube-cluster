@@ -71,6 +71,16 @@ resource "aws_security_group_rule" "cluster-ingress-workstation-https" {
   type              = "ingress"
 }
 
+resource "aws_security_group_rule" "cluster-ingress-bastion-https" {
+  description              = "Allow Bastion host to communicate with the cluster API Server"
+  from_port                = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cluster-sg.id
+  source_security_group_id = aws_security_group.bastion-client-sg.id
+  to_port                  = 443
+  type                     = "ingress"
+}
+
 resource "aws_eks_cluster" "cluster" {
   name     = var.cluster-name
   role_arn = aws_iam_role.cluster-role.arn
@@ -80,6 +90,8 @@ resource "aws_eks_cluster" "cluster" {
   vpc_config {
     security_group_ids = [aws_security_group.cluster-sg.id]
     subnet_ids         = aws_subnet.cluster-sn[*].id
+    endpoint_private_access = true
+    public_access_cidrs = var.cluster-api-public-access-cidrs
   }
   depends_on = [
     aws_iam_role_policy_attachment.cluster-AmazonEKSClusterPolicy,
@@ -96,6 +108,27 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(aws_eks_cluster.cluster.certificate_authority.0.data)
   token                  = data.aws_eks_cluster_auth.cluster.token
   load_config_file       = false
-  version                = "1.10.0"
+#  version                = "1.13.3"
   alias                  = "override"
 }
+
+#module "alb_ingress_controller" {
+#  source = "iplabs/alb-ingress-controller/kubernetes"
+#  version = "3.1.0"
+#
+#  providers = {
+#    kubernetes = kubernetes.override
+#  }
+#  k8s_cluster_type = "eks"
+#  k8s_namespace    = "kube-system"
+#
+#  aws_region_name  = data.aws_region.current.name
+#  k8s_cluster_name = aws_eks_cluster.cluster.name
+#  aws_tags = map(
+#      "Name", "${var.cluster-name}-alb-ingress-controler",
+#      "kubernetes.io/cluster/${var.cluster-name}", "owned",
+#      "cluster-name", var.cluster-name
+#	)
+#}
+
+

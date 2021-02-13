@@ -1,9 +1,0 @@
-output/
-post_install.sh
-.gradle
-.terraform
-terraform.tfstate
-terraform.tfstate.backup
-.idea
-infra-kubernets.iml
-bash.exe.stackdump

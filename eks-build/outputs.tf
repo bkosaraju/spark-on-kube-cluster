@@ -1,3 +1,11 @@
+resource "random_string" "random" {
+  length = 16
+  special = true
+  override_special = "@#%&*()-_=+[]{}<>:?"
+  min_numeric = 1
+  min_special = 1
+  min_upper = 1
+}
 locals {
   config_map_aws_auth = <<CONFIGMAPAWSAUTH
 apiVersion: v1
@@ -315,9 +323,39 @@ echo "Crease spark user.."
 echo "Enable Autoscaling.."
 kubectl apply -f output/cluster-autoscaler-autodiscover.yaml
 kubectl -n kube-system annotate deployment.apps/cluster-autoscaler cluster-autoscaler.kubernetes.io/safe-to-evict="false"
-[[ -f output/install_pm.sh ]] && bash output/install_pm.sh
-[[ -f output/install_gfn.sh ]] && bash output/install_gfn.sh
-[[ -f output/install_argo.sh ]] && bash output/install_argo.sh
+echo "Install nginx Ingess Service"
+kubectl apply -f output/nginx-controller.yaml
+#Install helm
+echo "Install latest version of helm"
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+#Add required repos
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+#wait for nginx-controller to be up once done enable ingress for other services
+sleep 120
+#//TODO: Find a way to identify ingress controller created or not 
+#while [ $(kubectl get pods --field-selector=status.phase=Running -n ingress-nginx  | wc -l) -lt 2  ]
+#do
+#  echo "Waiting for nodes to start and schedule pods.."
+#  sleep 5
+#done
+[[ -f output/install_argo.sh ]] && bash output/install_argo.sh || bash output/install_argo.sh 
+[[ -f output/install_pm.sh ]] && bash output/install_pm.sh || bash output/install_pm.sh
+[[ -f output/install_gfn.sh ]] && bash output/install_gfn.sh || bash output/install_gfn.sh
+#wait for nodes to be up once done enable to LBS and delete volume initializer
+kubectl -n ${var.prometheus-ns} delete -f output/initvolume.yaml
+#Create OAuth Test Users
+aws cognito-idp admin-delete-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_admin 2>/dev/null
+aws cognito-idp admin-delete-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_edit 2>/dev/null
+aws cognito-idp admin-delete-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_readonly 2>/dev/null
+aws cognito-idp admin-create-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_admin --user-attributes '[{"Name": "email","Value": "app_admin@${var.eks-hosted-dnszone}"}]' --message-action SUPPRESS --temporary-password "${random_string.random.result}"
+aws cognito-idp admin-create-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_readonly --user-attributes '[{"Name": "email","Value": "app_readonly@${var.eks-hosted-dnszone}"}]' --message-action SUPPRESS --temporary-password "${random_string.random.result}"
+aws cognito-idp admin-create-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_edit --user-attributes '[{"Name": "email","Value": "app_edit@${var.eks-hosted-dnszone}"}]' --message-action SUPPRESS --temporary-password "${random_string.random.result}"
 INITSCRIPT
 
   clusterroles = <<ROLES
@@ -429,11 +467,13 @@ resource "local_file" "efsmount" {
 resource "local_file" "kubeconfig" {
     content     = local.kubeconfig
     filename = "output/kubeconfig"
+    file_permission = "0700"
 }
 
 resource "local_file" "homedirkubeconfig" {
   content     = local.kubeconfig
   filename = pathexpand("~/.kube/config")
+  file_permission = "0700"
 }
 
 resource "local_file" "aws_auth" {
@@ -461,5 +501,6 @@ resource "local_file" "autoscalar" {
     content     = local.autoscale
     filename = "output/cluster-autoscaler-autodiscover.yaml"
 }
+
 
 

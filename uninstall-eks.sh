@@ -1,6 +1,11 @@
 #!/bin/bash
-helm del --purge grafana 2>/dev/null
-helm del --purge prometheus 2>/dev/null
-kubectl -n argo patch svc argo-server -p '{"spec": {"type": "NodePort"}}' 2>/dev/null
-kubectl -n prometheus patch svc prometheus-pushgateway -p '{"spec": {"type": "NodePort"}}' 2>/dev/null
+cp output/kubeconfig output/kubeconfig.bkp 2>/dev/null
+helm del --purge -n grafana grafana 2>/dev/null
+helm del --purge -n prometheus  prometheus-community/prometheus 2>/dev/null
+kubectl delete -f output/nginx-controller.yaml
+cd post-build
+terraform destroy --force
+terraform destroy --force
+cd ../
+terraform destroy --force
 terraform destroy --force

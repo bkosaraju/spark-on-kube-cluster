@@ -38,6 +38,18 @@ resource "aws_subnet" "cluster-sn" {
     )
 }
 
+#resource "aws_subnet" "elb-sn" {
+#  count = var.vpc_az_count
+#  availability_zone = data.aws_availability_zones.available.names[count.index]
+#  cidr_block = var.vpc_az_cidrs_elb
+#  vpc_id            = aws_vpc.cluster-vpc.id
+#  tags = map(
+#  "Name", "${var.cluster-name}-elb-subnet",
+#  "kubernetes.io/cluster/${var.cluster-name}", "shared",
+#  "kubernetes.io/role/elb","1",
+#  )
+#}
+
 resource "aws_internet_gateway" "cluster-igw" {
   vpc_id = aws_vpc.cluster-vpc.id
   tags = {
@@ -46,6 +58,7 @@ resource "aws_internet_gateway" "cluster-igw" {
 }
 
 resource "aws_route_table" "cluster-rt" {
+count = var.vpc_az_count
   vpc_id = aws_vpc.cluster-vpc.id
 
 //  route {
@@ -54,7 +67,7 @@ resource "aws_route_table" "cluster-rt" {
 //  }
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.cluster-nat-gw.id
+    gateway_id = aws_nat_gateway.cluster-nat-gw[count.index].id
   }
   tags = map(
   "Name", "${var.cluster-name}-rtb",
@@ -65,5 +78,12 @@ resource "aws_route_table" "cluster-rt" {
 resource "aws_route_table_association" "cluster-rt-association" {
   count = var.vpc_az_count
   subnet_id      = aws_subnet.cluster-sn.*.id[count.index]
-  route_table_id = aws_route_table.cluster-rt.id
+  route_table_id = aws_route_table.cluster-rt[count.index].id
 }
+
+#resource "aws_route_table_association" "elb-rt-association" {
+#  count = var.vpc_az_count
+#  subnet_id      = aws_subnet.elb-sn.*.id[count.index]
+#  route_table_id = aws_route_table.cluster-rt.id
+#}
+

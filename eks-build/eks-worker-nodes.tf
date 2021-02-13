@@ -72,14 +72,15 @@ resource "aws_iam_role_policy_attachment" "cluster-worker-AmazonEC2ContainerRegi
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = aws_iam_role.cluster-worker-role.name
 }
-resource "aws_iam_role_policy_attachment" "eks-argo-s3-iam-policy-attach" {
-  role       = aws_iam_role.cluster-worker-role.name
-  policy_arn = aws_iam_policy.argo-s3-config.arn
-}
-resource "aws_iam_role_policy_attachment" "eks-argo-kms-iam-policy-attach" {
-  role       = aws_iam_role.cluster-worker-role.name
-  policy_arn = aws_iam_policy.argo-kms-keyaccess.arn
-}
+
+#resource "aws_iam_role_policy_attachment" "eks-argo-s3-iam-policy-attach" {
+#  role       = aws_iam_role.cluster-worker-role.name
+#  policy_arn = aws_iam_policy.argo-s3-config.arn
+#}
+#resource "aws_iam_role_policy_attachment" "eks-argo-kms-iam-policy-attach" {
+#  role       = aws_iam_role.cluster-worker-role.name
+#  policy_arn = aws_iam_policy.argo-kms-keyaccess.arn
+#}
 
 
 resource "aws_iam_instance_profile" "cluster-worker-profile" {

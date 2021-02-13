@@ -1,11 +1,8 @@
 
 //TODO: Update Key
-variable "bastian_public_key" {
-  default = ""
-}
 resource "aws_key_pair" "bastin-client_key" {
   key_name   = "${var.cluster-name}-bastion-key"
-  public_key = var.bastion_public_key
+  public_key = "ssh-rsa XXXXXXX"
   tags = map(
   "Name", "${var.cluster-name}-bastion-key",
   "kubernetes.io/cluster/${var.cluster-name}", "owned",
@@ -46,15 +43,15 @@ resource "aws_security_group" "bastion-client-sg" {
     )
 }
 
-
+//TODO : Update Subnet ID based on AZ
 resource "aws_instance" "bastion-client" {
   count             = 1
   ami               = "ami-0b8b10b5bf11f3a22"
   instance_type     = var.bastion-instance-type
   monitoring        = "false"
   key_name          = aws_key_pair.bastin-client_key.key_name
-  subnet_id         = aws_subnet.cluster-nat-sn.id
-  security_groups   = [aws_security_group.bastion-client-sg.id,aws_security_group.cluster-efs-sg.id]
+  subnet_id         = aws_subnet.cluster-nat-sn[1].id
+  vpc_security_group_ids = [aws_security_group.bastion-client-sg.id,aws_security_group.cluster-efs-sg.id]
   associate_public_ip_address = true
   user_data_base64 = base64encode(local.bastion-client)
   tags = map(
@@ -81,22 +78,16 @@ resource "aws_security_group_rule" "cluster-node-ingress-bastion" {
 //  security_groups = [aws_security_group.cluster-efs-sg.id]
 //}
 
-
-
 locals {
   bastion-client = <<USERDATA
 #!/bin/bash
 set -o xtrace
-curl -o /tmp/kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
+curl -o /tmp/kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/kubectl
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-curl -o /tmp/aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/aws-iam-authenticator
+curl -o /tmp/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/aws-iam-authenticator
 chmod +x /tmp/kubectl /tmp/eksctl /tmp/aws-iam-authenticator
 mv /tmp/kubectl /tmp/eksctl /tmp/aws-iam-authenticator /usr/local/bin
 yum install java-openjdk -y
-#yum install -y amazon-efs-utils
-#mkdir /efs
-#efs_id='${aws_efs_file_system.cluster-efs.dns_name}'
-#mount -t efs $efs_id:/ /efs
-#echo $efs_id:/ /efs efs defaults,_netdev 0 0 >> /etc/fstab
+yum upgrade awscli -y
 USERDATA
 }
