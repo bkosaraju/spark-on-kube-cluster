@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: pipeline-template-v211245119
+  namespace: datamarvels
+spec:
+  entrypoint: pipeline-v211245119
+  templates:
+    - name: pipeline-v211245119
+      inputs:
+        parameters:
+          - name: jobid
+          - name: jobordertimestamp
+            value: 2020-01-25
+          - name: runmode
+            value: r
+      container:
+        image: 991267008870.dkr.ecr.ap-southeast-2.amazonaws.com/imf/de:2.11_2.4.5_1.19
+        command: [
+            "/bin/sh",
+            "-c",
+            "pipeline  -j {{inputs.parameters.jobid}} -d {{inputs.parameters.jobordertimestamp}} -p /opt/pipeline/conf/pipeline.porperties -{{inputs.parameters.runmode}}"
+        ]
+      archiveLocation:
+        archiveLogs: true

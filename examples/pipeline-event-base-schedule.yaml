@@ -1,0 +1,97 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventBus
+metadata:
+  name: default
+spec:
+  nats:
+    native:
+      replicas: 3
+      auth: token
+---
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: webhook
+spec:
+  service:
+    ports:
+      - port: 12000
+        targetPort: 12000
+  webhook:
+    apphandshake:
+      port: "12000"
+      endpoint: /apphandshake
+      method: POST
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: argo-events-webhook-ing
+  namespace: datamarvels
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: eks-dm-dev.datamarvels.com
+      http:
+        paths:
+          - path: /apphandshake
+            pathType: Prefix
+            backend:
+              serviceName: webhook-eventsource-svc
+              servicePort: 12000
+
+---
+
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: webhook
+  namespace: datamarvels
+spec:
+  template:
+    serviceAccountName: app-robot-user
+  dependencies:
+    - name: apphandshake-dep
+      eventSourceName: webhook
+      eventName: apphandshake
+  triggers:
+    - template:
+        name: pipelineapp-trigger
+        k8s:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: create
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: sftp-transfer
+              spec:
+                serviceAccountName: app-robot-user
+                entrypoint: pipeline-v211245119
+                arguments:
+                  parameters:
+                    - name: jobid
+                      value: 1005
+                templates:
+                  - name: pipeline-v211245119
+                    inputs:
+                      parameters:
+                        - name: jobid
+                        - name: jobordertimestamp
+                          value: 2021-01-25
+                        - name: runmode
+                          value: r
+                    container:
+                      image: 991267008870.dkr.ecr.ap-southeast-2.amazonaws.com/imf/de:2.11_2.4.5_1.19
+                      command: [
+                          "/bin/sh",
+                          "-c",
+                          "pipeline  -j {{inputs.parameters.jobid}} -d {{inputs.parameters.jobordertimestamp}} -p /opt/pipeline/conf/pipeline.porperties -{{inputs.parameters.runmode}}"
+                      ]
+                    archiveLocation:
+                      archiveLogs: true

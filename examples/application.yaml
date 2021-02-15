@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pipeline-dependency
+  namespace: datamarvels
+spec:
+  serviceAccountName: app-robot-user
+  entrypoint: extraction
+#  workflowSpec:
+#  schedule:
+#  event:
+  templates:
+    - name: extraction
+      dag:
+        tasks:
+          - name: sftp-extraction
+            templateRef:
+              name: pipeline-wft-v211245119
+              template: pipeline-tl-v211245119
+            arguments:
+              parameters: [{name: jobid, value: 1005}]
+          - name: rdbms-extraction
+            templateRef:
+              name: pipeline-wft-v211245119
+              template: pipeline-tl-v211245119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]
+          - name: curation
+            dependencies: [rdbms-extraction]
+            templateRef:
+              name: pipeline-wft-v211245119
+              template: pipeline-tl-v211245119
+            arguments:
+              parameters: [{name: jobid, value: 1007}]
+          - name: t0loader
+            dependencies: [curation]
+            templateRef:
+              name: pipeline-wft-v211245119
+              template: pipeline-tl-v211245119
+            arguments:
+              parameters: [{name: jobid, value: 1008}]
+          - name: feature-a
+            dependencies: [t0loader]
+            templateRef:
+              name: pipeline-wft-v211245119
+              template: pipeline-tl-v211245119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]
+          - name: feature-b
+            dependencies: [t0loader,sftp-extraction]
+            templateRef:
+              name: pipeline-wft-v211245119
+              template: pipeline-tl-v211245119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]
+          - name: feature-c
+            dependencies: [feature-a,feature-b]
+            templateRef:
+              name: pipeline-wft-v211245119
+              template: pipeline-tl-v211245119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]

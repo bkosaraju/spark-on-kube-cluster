@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pipeline-dependency
+  namespace: datamarvels
+spec:
+  serviceAccountName: app-robot-user
+  entrypoint: extraction
+  templates:
+    - name: pipeline-v212301119
+      inputs:
+        parameters:
+          - name: jobid
+          - name: jobordertimestamp
+            value: 2021-01-25
+          - name: runmode
+            value: r
+      container:
+        image: 991267008870.dkr.ecr.ap-southeast-2.amazonaws.com/imf/de:2.12_3.0.1_1.19
+        command: [
+            "/bin/sh",
+            "-c",
+            "pipeline  -j {{inputs.parameters.jobid}} -d {{inputs.parameters.jobordertimestamp}} -p /opt/pipeline/conf/pipeline.porperties -{{inputs.parameters.runmode}}"
+        ]
+      archiveLocation:
+        archiveLogs: true
+    - name: extraction
+      dag:
+        tasks:
+          - name: sftp-extraction
+            template: pipeline-v212301119
+            arguments:
+              parameters: [{name: jobid, value: 1005}]
+          - name: rdbms-extraction
+            template: pipeline-v212301119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]
+          - name: curation
+            dependencies: [rdbms-extraction]
+            template: pipeline-v212301119
+            arguments:
+              parameters: [{name: jobid, value: 1007}]
+          - name: t0loader
+            dependencies: [curation]
+            template: pipeline-v212301119
+            arguments:
+              parameters: [{name: jobid, value: 1008}]
+          - name: feature-a
+            dependencies: [t0loader]
+            template: pipeline-v212301119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]
+          - name: feature-b
+            dependencies: [t0loader,sftp-extraction]
+            template: pipeline-v212301119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]
+          - name: feature-c
+            dependencies: [feature-a,feature-b]
+            template: pipeline-v212301119
+            arguments:
+              parameters: [{name: jobid, value: 2001}]

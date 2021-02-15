@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pipeline-v211245119
+  namespace: datamarvels
+spec:
+  entrypoint: pipeline
+  templates:
+    - name: pipeline
+      dag:
+        tasks:
+          - name: pipeline-v211245119
+            templateRef:
+              name: pipeline-template-v211245119
+              template: pipeline-v211245119
+            arguments:
+              parameters:
+                - name: jobid
+                  value: "1004"
+                - name: jobordertimestamp
+                  value: "{{workflow.creationTimestamp}}"
