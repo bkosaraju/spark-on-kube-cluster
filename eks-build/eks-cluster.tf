@@ -112,6 +112,8 @@ provider "kubernetes" {
   alias                  = "override"
 }
 
+#Rellaced with Nginx-ALB backed ingress controller
+
 #module "alb_ingress_controller" {
 #  source = "iplabs/alb-ingress-controller/kubernetes"
 #  version = "3.1.0"

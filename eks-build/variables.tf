@@ -62,7 +62,7 @@ variable "worker-instances-cooldown-duration" {
 
 #Application Specific configuration
 variable "application-namespace" {
- default = "appdomainname"
+ default = "datamarvels"
  type   = string
 }
 
@@ -72,12 +72,12 @@ variable "application-serviceaccount" {
 }
 
 variable "application-s3-bucket" {
-  default = "config"
+  default = "imf-config"
   type = string
 }
 
 variable "application-s3-bucket-kms-key" {
-  default = "s3-kms"
+  default = "imf-s3-kms"
   type = string
 }
 
@@ -101,13 +101,13 @@ variable "grafana-admin-temp-password" {
 
 
 variable "argo-s3-bucket" {
-  default = "argo-artifacts"
+  default = "imf-argo-artifacts"
   type = string
 }
 
 
-variable "argo-wf-controller-version" {
- default = "v2.12.5"
+variable "argo-version" {
+ default = "v3.0.0-rc8"
  type   = string
 }
 
@@ -118,12 +118,33 @@ variable "argo-ns" {
 
 
 variable "argo-s3-bucket-kms-key" {
-  default = "s3-kms"
+  default = "imf-s3-kms"
   type = string
 }
 
 variable "eks-hosted-dnszone" {
-  default = "appliactiondomainname.com"
+  default = "datamarvels.com"
+  type = string
+}
+
+variable "spark-hs-image" {
+  default = "991267008870.dkr.ecr.ap-southeast-2.amazonaws.com/imf/de:2.12_3.0.1_1.19"
+  type = string
+}
+
+variable "spark-hs-location" {
+  default = "s3a://imf-config/spark-hs/event-log"
+  type = string
+}
+
+variable "dashboard-ns" {
+  default = "kubernetes-dashboard"
+  type = string
+}
+
+
+variable "kubeflow-ns" {
+  default = "kubeflow"
   type = string
 }
 

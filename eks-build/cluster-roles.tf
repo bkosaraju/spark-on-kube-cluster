@@ -260,7 +260,7 @@ POLICY
                   "ssm:GetParameters",
                   "ssm:GetParameter"
               ],
-              "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/*/*"
+              "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/imf/*"
           },
           {
               "Sid": "VisualEditor1",
@@ -271,7 +271,7 @@ POLICY
                   "ssm:GetParameters",
                   "ssm:GetParameter"
               ],
-              "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/dev/*"
+              "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/dev/imf/*"
           },
 
           {

@@ -302,7 +302,25 @@ spec:
 
 AUTOSCALE
 
+dashboardingress = <<DSINGRESS
 
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+  name: dashboard-ingress
+  namespace: ${var.dashboard-ns}
+spec:
+  rules:
+  - host: dashboard.${var.cluster-name}.${var.eks-hosted-dnszone}
+    http:
+      paths:
+      - backend:
+          serviceName: kubernetes-dashboard
+          servicePort: 80
+        path: /
+DSINGRESS
 
   initcluster = <<INITSCRIPT
 
@@ -325,6 +343,10 @@ kubectl apply -f output/cluster-autoscaler-autodiscover.yaml
 kubectl -n kube-system annotate deployment.apps/cluster-autoscaler cluster-autoscaler.kubernetes.io/safe-to-evict="false"
 echo "Install nginx Ingess Service"
 kubectl apply -f output/nginx-controller.yaml
+#wait for nginx-controller to be up once done enable ingress for other services
+sleep 90
+#Install dashboard
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended.yaml
 #Install helm
 echo "Install latest version of helm"
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
@@ -336,19 +358,16 @@ helm repo add grafana https://grafana.github.io/helm-charts
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
-#wait for nginx-controller to be up once done enable ingress for other services
-sleep 120
-#//TODO: Find a way to identify ingress controller created or not 
-#while [ $(kubectl get pods --field-selector=status.phase=Running -n ingress-nginx  | wc -l) -lt 2  ]
-#do
-#  echo "Waiting for nodes to start and schedule pods.."
-#  sleep 5
-#done
+
 [[ -f output/install_argo.sh ]] && bash output/install_argo.sh || bash output/install_argo.sh 
 [[ -f output/install_pm.sh ]] && bash output/install_pm.sh || bash output/install_pm.sh
 [[ -f output/install_gfn.sh ]] && bash output/install_gfn.sh || bash output/install_gfn.sh
-#wait for nodes to be up once done enable to LBS and delete volume initializer
-kubectl -n ${var.prometheus-ns} delete -f output/initvolume.yaml
+[[ -f output/spark-history-srvr.yaml ]] && kubectl -n ${var.application-namespace} apply -f output/spark-history-srvr.yaml
+[[ -f output/dashboardingress.yaml ]] && kubectl -n ${var.dashboard-ns} apply -f output/dashboardingress.yaml
+
+#Upadete Prometheus server file system premissions
+kubectl -n ${var.prometheus-ns} apply -f output/initvolume.yaml
+kubectl -n ${var.prometheus-ns} delete "$(kubectl get pods -l app=prometheus-server -n  ${var.prometheus-ns} -o name)" 2>/dev/null
 #Create OAuth Test Users
 aws cognito-idp admin-delete-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_admin 2>/dev/null
 aws cognito-idp admin-delete-user --user-pool-id ${aws_cognito_user_pool.pool.id} --username app_edit 2>/dev/null
@@ -502,5 +521,9 @@ resource "local_file" "autoscalar" {
     filename = "output/cluster-autoscaler-autodiscover.yaml"
 }
 
+resource "local_file" "dashboradingress" {
+    content     = local.dashboardingress
+    filename = "output/dashboardingress.yaml"
+}
 
 

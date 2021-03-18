@@ -63,7 +63,7 @@ spec:
         - server
         - --auth-mode
         - sso
-        image: argoproj/argocli:latest
+        image: argoproj/argocli:${var.argo-version}
         name: argo-server
         ports:
         - containerPort: 2746
@@ -109,7 +109,7 @@ spec:
         - argoproj/argoexec:latest
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:${var.argo-wf-controller-version}
+        image: argoproj/workflow-controller:${var.argo-version}
         name: workflow-controller
         env:
         - name: LEADER_ELECTION_IDENTITY

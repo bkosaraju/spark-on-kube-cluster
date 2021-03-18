@@ -142,13 +142,13 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/down
 
 kubectl create namespace ${var.prometheus-ns} 2>/dev/null
 kubectl -n ${var.prometheus-ns} apply -f output/prometheus-efs.yaml
-kubectl -n ${var.prometheus-ns} apply -f output/initvolume.yaml
+#kubectl -n ${var.prometheus-ns} apply -f output/initvolume.yaml
 helm del -n ${var.prometheus-ns}  prometheus  2>/dev/null
 helm install prometheus prometheus-community/prometheus --namespace ${var.prometheus-ns} -f output/prometheus-helmcnfg.yaml
-echo "Log from volume initilizer"
-kubectl -n ${var.prometheus-ns} logs -f inintprometheus
-echo "purge volume initilizer"
-kubectl -n ${var.prometheus-ns} delete -f output/initvolume.yaml
+#echo "Log from volume initilizer"
+#kubectl -n ${var.prometheus-ns} logs -f inintprometheus
+#echo "purge volume initilizer"
+#kubectl -n ${var.prometheus-ns} delete -f output/initvolume.yaml
 PMCONFIG
 
 }

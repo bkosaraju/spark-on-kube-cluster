@@ -2,7 +2,7 @@
 //TODO: Update Key
 resource "aws_key_pair" "bastin-client_key" {
   key_name   = "${var.cluster-name}-bastion-key"
-  public_key = "ssh-rsa XXXXXXX"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLxqhjmftNE2QEgekJ9SzBbgvYvbhwDQUK8gb77c5XjqLcmIK2vPXl7kPKNDd0h1v9kDvIqXHuEDutJH5gzd93AFdFbIHFwIrFFXPlEumlHNs3Ba3WoYUlbNIQ6b+fOuDxW/PPogUMsSO0NHCRMO0M/oIgY6uCwu5za9/HJK+DNcEzJVm2Cc8h0lMGpQx9mNKgL1yBjNXZQWaELrs3rEZZZkG4hGcTS9IfFS+LP3GBfzbqIi0RhxyTYtxuq/3mf/3SMozTGwmIZvwlacSb0j6mjB+ikB4p9dph9n5kyglrxlum9lhrWyB7buhyz4TeVL+zq3TLWLXiX2XwagdM+fnL imf-nat-key"
   tags = map(
   "Name", "${var.cluster-name}-bastion-key",
   "kubernetes.io/cluster/${var.cluster-name}", "owned",

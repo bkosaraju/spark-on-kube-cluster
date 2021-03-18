@@ -137,49 +137,73 @@ data "aws_ami" "eks-worker" {
   owners      = ["602401143452"] # Amazon EKS AMI Account ID
 }
 
-# EKS currently documents this required userdata for EKS worker nodes to
-# properly configure Kubernetes applications on the EC2 instance.
-# We utilize a Terraform local here to simplify Base64 encoding this
-# information into the AutoScaling Launch Configuration.
 # More information: https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html
 locals {
   worker-userdata = <<USERDATA
 #!/bin/bash
 set -o xtrace
+
+DEVICE=/dev/$(lsblk -n | awk '$NF != "/" {print $1}')
+FS_TYPE=$(file -s $DEVICE | awk '{print $2}')
+MOUNT_POINT=/data
+
+# If no FS, then this output contains "data"
+if [ "$FS_TYPE" = "data" ]
+then
+    echo "Creating file system on $DEVICE"
+    mkfs -t ext4 $DEVICE
+fi
+
+mkdir $MOUNT_POINT
+mount $DEVICE $MOUNT_POINT
+
+
 /etc/eks/bootstrap.sh --apiserver-endpoint '${aws_eks_cluster.cluster.endpoint}' --b64-cluster-ca '${aws_eks_cluster.cluster.certificate_authority.0.data}' '${var.cluster-name}'
 USERDATA
 }
 
-resource "aws_launch_configuration" "worker-node-lc" {
-  iam_instance_profile         = aws_iam_instance_profile.cluster-worker-profile.name
+resource "aws_launch_template" "worker-node-lt" {
   image_id                    = data.aws_ami.eks-worker.id
   instance_type               = var.worker-instance-type
-  name_prefix                  = "${var.cluster-name}-worker"
-  security_groups             = [aws_security_group.worker-sg.id]
-  user_data_base64            = base64encode(local.worker-userdata)
-  //TODO: To be removed
+  name_prefix                 = "${var.cluster-name}-worker"
+  vpc_security_group_ids            = [aws_security_group.worker-sg.id]
+  user_data            = base64encode(local.worker-userdata)
   key_name = aws_key_pair.bastin-client_key.id
-  lifecycle {
-    create_before_destroy = true
+  
+  iam_instance_profile {
+   name = aws_iam_instance_profile.cluster-worker-profile.name
   }
-  root_block_device {
-    delete_on_termination = true
-    volume_size = var.worker-ebs-volume-size
+
+#ephemeral_block_device {
+# device_name = "/dev/xvda"
+#}
+
+block_device_mappings {
+  device_name = "/dev/xvda"
+  no_device = true
+  ebs {
     volume_type = "io1"
+    volume_size = 300
     iops = 3000
   }
 }
+ 
+}
+
 
 
 resource "aws_autoscaling_group" "worker-asg" {
   desired_capacity     = 1
-  launch_configuration  = aws_launch_configuration.worker-node-lc.id
+#  launch_configuration  = aws_launch_configuration.worker-node-lc.id
   max_size             = var.worker-max-instances
   min_size             = 1
   name                 = "${var.cluster-name}-workers"
   vpc_zone_identifier   = aws_subnet.cluster-sn[*].id
   default_cooldown     = var.worker-instances-cooldown-duration
-
+  launch_template {
+    id      = aws_launch_template.worker-node-lt.id
+    version = "$Latest"
+  }
   tag {
     key                 = "Name"
     value               = "${var.cluster-name}-workers"
