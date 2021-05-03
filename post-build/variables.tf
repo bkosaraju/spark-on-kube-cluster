@@ -107,7 +107,7 @@ variable "argo-s3-bucket" {
 
 
 variable "argo-version" {
- default = "v3.0.0-rc8"
+ default = "v3.0.1"
  type   = string
 }
 

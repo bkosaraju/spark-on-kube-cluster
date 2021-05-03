@@ -334,7 +334,7 @@ kubectl apply -f output/cluster_roles.yaml
 echo "Apply AWS Auth..."
 kubectl apply -f output/config_map_aws_auth.yaml
 echo "Provision EFS to EKS..."
-kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.1"
 kubectl apply -f output/efsconfig.yaml
 echo "Crease spark user.."
 #kubectl apply -f output/sparkuser.yaml

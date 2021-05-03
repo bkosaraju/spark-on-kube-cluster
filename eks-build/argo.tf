@@ -33,6 +33,7 @@ metadata:
     ingress.kubernetes.io/proxy-body-size: 100M
     kubernetes.io/ingress.class: "nginx"
     ingress.kubernetes.io/app-root: "/"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:
   rules:
   - host: argo.${var.cluster-name}.${var.eks-hosted-dnszone}
@@ -72,7 +73,7 @@ spec:
           httpGet:
             path: /
             port: 2746
-            scheme: HTTP
+            scheme: HTTPS
           initialDelaySeconds: 10
           periodSeconds: 20
         volumeMounts:
